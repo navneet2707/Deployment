@@ -1,14 +1,17 @@
-from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
+from dotenv import load_dotenv
 import os
 
+# Load environment variables
 load_dotenv()
+
+# FastAPI app
 app = FastAPI()
 
-# CORS
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,28 +20,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# OpenAI / NexusAI Client
+# Get API key from environment
+api_key = os.getenv("NEXUS_API_KEY")
+
+if not api_key:
+    raise ValueError("NEXUS_API_KEY environment variable is missing")
+
+# OpenAI client
 client = OpenAI(
-    api_key=os.getenv("API_KEY"),
+    api_key=api_key,
     base_url="https://apidev.navigatelabsai.com"
 )
 
-# Request Model
+# Request body model
 class PromptRequest(BaseModel):
     user_prompt: str
 
-# Root Endpoint
+# Root endpoint
 @app.get("/")
 def read_root():
-    return {"message": "NexusAI is working"}
+    return {
+        "message": "NexusAI backend is running successfully"
+    }
 
-# Welcome Endpoint
-@app.get("/welcome/")
+# Welcome endpoint
+@app.get("/welcome")
 def welcome():
-    return {"message": "Welcome to Navi Chat"}
+    return {
+        "message": "Welcome to Navi Chat"
+    }
 
-# AI Endpoint
-@app.post("/run_task/")
+# AI endpoint
+@app.post("/run_task")
 async def run_task(req: PromptRequest):
     try:
         response = client.chat.completions.create(
@@ -48,9 +61,8 @@ async def run_task(req: PromptRequest):
                     "role": "system",
                     "content": (
                         "You are a personal AI tutor. "
-                        "Explain things in simple layman terms. "
-                        "Keep responses short and precise. "
-                        "Do not hallucinate."
+                        "Explain everything in simple layman terms. "
+                        "Keep responses short, precise, and factual."
                     )
                 },
                 {
@@ -65,4 +77,7 @@ async def run_task(req: PromptRequest):
         }
 
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
