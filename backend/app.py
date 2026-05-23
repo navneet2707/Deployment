@@ -1,11 +1,11 @@
 from dotenv import load_dotenv
-load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from openai import OpenAI
 import os
 
+load_dotenv()
 app = FastAPI()
 
 # CORS
